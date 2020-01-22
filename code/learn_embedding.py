@@ -113,9 +113,12 @@ if __name__ == '__main__':
     print("Model : %s" % model_name)
 
     paths = list(sorted(glob('/media/ml/data_ml/dogs-vs-cats-redux-kernels-edition/train/*.jpg')))
+    extra_paths = list(sorted(glob('/media/ml/data_ml/petfinder-adoption-prediction/*_images/*.jpg')))
     train, test = train_test_split(paths, random_state=1337, test_size=0.1)
 
     train, val = train_test_split(train, random_state=1337, test_size=0.1)
+
+    train += extra_paths
 
     model = baseline_model()
 
@@ -126,10 +129,10 @@ if __name__ == '__main__':
 
     check = ModelCheckpoint(filepath=model_name, monitor="val_accuracy", save_best_only=True, verbose=1,
                             save_weights_only=True)
-    reduce = ReduceLROnPlateau(monitor="val_accuracy", patience=50, verbose=1, min_lr=1e-7)
+    reduce = ReduceLROnPlateau(monitor="val_accuracy", patience=20, verbose=1, min_lr=1e-7)
 
     history = model.fit_generator(gen(train, batch_size=batch_size), epochs=10000, verbose=1,
                                   steps_per_epoch=len(train) // batch_size // 10,
                                   validation_data=gen(val, batch_size=batch_size),
-                                  validation_steps=len(val) // batch_size // 10,
+                                  validation_steps=len(val) // batch_size,
                                   use_multiprocessing=True, workers=8, callbacks=[check, reduce])

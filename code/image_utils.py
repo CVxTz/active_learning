@@ -48,8 +48,8 @@ def crop(img, crop_size_x, crop_size_y):
 
 
 def select_random_crop(img):
-    ratio_x = np.random.uniform(0.3, 0.6)
-    ratio_y = np.random.uniform(0.3, 0.6)
+    ratio_x = np.random.uniform(0.4, 0.6)
+    ratio_y = np.random.uniform(0.4, 0.6)
 
     crop_size_x, crop_size_y = int(img.shape[0]*ratio_x), int(img.shape[1]*ratio_y)
 
@@ -64,6 +64,6 @@ if __name__ == '__main__':
 
     img = select_random_crop(img)
 
-    img = resize_img(img, h=256, w=256)
+    img = resize_img(img, h=128, w=128)
 
     cv2.imwrite("sample_2.jpg", img)

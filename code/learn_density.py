@@ -1,6 +1,6 @@
 import json
 from glob import glob
-from random import sample
+from random import sample, shuffle
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -43,10 +43,10 @@ if __name__ == '__main__':
     # plt.hist(pred, bins=50)
     # plt.savefig('hist.png')
 
-    step_size = 1000
+    step_sizes = [50, 100, 200, 400, 800, 1600, 5000]
 
     indexes = list(range(len(train)))
-    seed = sample(indexes, k=step_size)
+    seed = sample(indexes, k=step_sizes[0])
     indexes = list(set(indexes) - set(seed))
 
     steps = [[train[i] for i in seed]]
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     i = 0
 
-    while len(indexes) > step_size:
+    for step_size in step_sizes[1:]:
         print("len(indexes)", len(indexes))
         print(i)
         i += 1
@@ -83,12 +83,38 @@ if __name__ == '__main__':
         indexes = list(set(indexes) - set(step_indexes))
         used_indexes += step_indexes
 
-    steps.append([train[i] for i in indexes])
+    indexes_random = list(range(len(train)))
+    seed_random = sample(indexes_random, k=step_sizes[0])
+    indexes_random = list(set(indexes_random) - set(seed_random))
+
+    steps_random = [[train[i] for i in seed_random]]
+
+    used_indexes_random = seed_random.copy()
+
+    i = 0
+
+    for step_size in step_sizes[1:]:
+        print("len(indexes_random)", len(indexes_random))
+        print(i)
+        i += 1
+
+        step_indexes_random = sample(indexes_random, k=step_size)
+
+        steps_random.append([train[i] for i in step_indexes_random])
+
+        indexes_random = list(set(indexes_random) - set(step_indexes_random))
+        used_indexes_random += step_indexes_random
 
     with open('../output/learning_steps.json', 'w') as f:
         data = {"active_learning_steps": steps,
-                "random_steps": list(chunker(train, size=step_size)),
+                "random_steps": steps_random,
                 "train": train,
                 "val": val,
                 "test": test}
         json.dump(data, f, indent=4)
+
+
+    print(len(steps), len(steps_random))
+
+    print([len(x) for x in steps])
+    print([len(x) for x in steps_random])

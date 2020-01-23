@@ -57,7 +57,7 @@ def gen(list_paths, batch_size=16):
 
 if __name__ == '__main__':
 
-    model_name = "active_learning_baseline.h5"
+    model_name = "random_baseline.h5"
     pre_trained_name = "embedding_model.h5"
 
     batch_size = 16
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         data = json.load(f)
         train, test, val = data['train'], data['test'], data['val']
 
-        active_learning_steps = data['active_learning_steps']
+        #active_learning_steps = data['active_learning_steps']
         random_steps = data['random_steps']
 
     used_train = []
@@ -83,9 +83,10 @@ if __name__ == '__main__':
     except:
         pass
 
-    for step in active_learning_steps:
+    for step in random_steps:
 
         used_train += step
+
 
         check = ModelCheckpoint(filepath=model_name, monitor="val_accuracy", save_best_only=True, verbose=1,
                                 save_weights_only=True)
@@ -108,7 +109,7 @@ if __name__ == '__main__':
 
         perf_curve.append(d)
 
-        with open('../output/active_learning_performance.json', 'w') as f:
+        with open('../output/random_performance.json', 'w') as f:
 
             json.dump(perf_curve, f, indent=4)
 

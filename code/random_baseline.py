@@ -67,8 +67,6 @@ if __name__ == '__main__':
     with open('../output/learning_steps.json', 'r') as f:
         data = json.load(f)
         train, test, val = data['train'], data['test'], data['val']
-
-        #active_learning_steps = data['active_learning_steps']
         random_steps = data['random_steps']
 
     used_train = []
@@ -78,29 +76,26 @@ if __name__ == '__main__':
     model = baseline_model()
 
     try:
-        # model.load_weights(model_name, by_name=True)
         model.load_weights(pre_trained_name, by_name=True)
     except:
         pass
 
     for step in random_steps:
 
-        used_train += step
-
+        used_train = step
 
         check = ModelCheckpoint(filepath=model_name, monitor="val_accuracy", save_best_only=True, verbose=1,
                                 save_weights_only=True)
-        reduce = ReduceLROnPlateau(monitor="val_accuracy", patience=5, verbose=1, min_lr=1e-7)
+        reduce = ReduceLROnPlateau(monitor="val_accuracy", patience=4, verbose=1, min_lr=1e-7)
 
-        early = EarlyStopping(patience=10)
+        early = EarlyStopping(patience=7)
 
-        history = model.fit_generator(gen(used_train, batch_size=batch_size), epochs=30, verbose=1,
+        history = model.fit_generator(gen(used_train, batch_size=batch_size), epochs=14, verbose=1,
                                       steps_per_epoch=len(used_train) // batch_size,
-                                      validation_data=gen(val, batch_size=batch_size),
+                                      # validation_data=gen(val, batch_size=batch_size), callbacks=[check, reduce],
                                       validation_steps=len(val) // batch_size,
-                                      use_multiprocessing=True, workers=8, callbacks=[check, reduce])
-
-        model.load_weights(model_name)
+                                      use_multiprocessing=True, workers=8)
+        model.save_weights(model_name)
 
         perf = model.evaluate_generator(gen(test, batch_size=batch_size), steps=2*len(test) // batch_size,
                                         use_multiprocessing=True, workers=8)

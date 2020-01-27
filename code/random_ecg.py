@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import json
-
+import os
 
 from tensorflow.keras import optimizers, losses, activations, models
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateScheduler, ReduceLROnPlateau
@@ -94,6 +94,7 @@ if __name__ == "__main__":
         step = np.random.choice(unused_samples, size=step_size).tolist()
         used_samples += step
         unused_samples = list(set(unused_samples) - set(step))
+        os.makedirs('../output/ecg/', exist_ok=True)
 
-        with open('../output/random_performance_%s.json'%float(rnd), 'w') as f:
+        with open('../output/ecg/random_performance_%s.json'%float(rnd), 'w') as f:
             json.dump(results, f, indent=4)

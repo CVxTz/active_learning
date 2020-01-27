@@ -56,14 +56,16 @@ if __name__ == "__main__":
 
     print(X.shape)
 
-    step_sizes = [2 ** i for i in range(7, 16)]
+    step_sizes = [128]*20
 
     unused_samples = list(range(X.shape[0]))
-    step = np.random.choice(unused_samples, size=128).tolist()
+    step = np.random.choice(unused_samples, size=512).tolist()
     used_samples = step
     unused_samples = list(set(unused_samples) - set(step))
 
     results = []
+
+    rnd = np.random.randint(1, 100000)
 
     for i, step_size in enumerate(step_sizes):
         X_used = X[used_samples, ...]
@@ -74,7 +76,7 @@ if __name__ == "__main__":
 
         model = get_model()
 
-        model.fit(X_used, Y_used, epochs=15, verbose=1, batch_size=64)
+        model.fit(X_used, Y_used, epochs=45, verbose=1, batch_size=32)
 
         pred_ununsed = model.predict(X_unused).tolist()
         entr = [entropy(l) for l in pred_ununsed]
@@ -95,5 +97,5 @@ if __name__ == "__main__":
         used_samples += step
         unused_samples = list(set(unused_samples) - set(step))
 
-        with open('../output/active_learning_performance.json', 'w') as f:
+        with open('../output/active_learning_performance_%s.json'%float(rnd), 'w') as f:
             json.dump(results, f, indent=4)

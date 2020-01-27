@@ -40,7 +40,7 @@ def get_model():
     opt = optimizers.Adam(0.001)
 
     model.compile(optimizer=opt, loss=losses.sparse_categorical_crossentropy, metrics=['acc'])
-    model.summary()
+    #model.summary()
     return model
 
 
@@ -57,14 +57,16 @@ if __name__ == "__main__":
 
     print(X.shape)
 
-    step_sizes = [2**i for i in range(7, 17)]
+    step_sizes = [128]*20
 
     unused_samples = list(range(X.shape[0]))
-    step = np.random.choice(unused_samples, size=128).tolist()
+    step = np.random.choice(unused_samples, size=512).tolist()
     used_samples = step
     unused_samples = list(set(unused_samples)-set(step))
 
     results = []
+
+    rnd = np.random.randint(1, 100000)
 
     for i, step_size in enumerate(step_sizes):
 
@@ -76,26 +78,22 @@ if __name__ == "__main__":
 
         model = get_model()
 
-        model.fit(X_used, Y_used, epochs=15, verbose=1, batch_size=64)
+        model.fit(X_used, Y_used, epochs=45, verbose=1, batch_size=32)
 
         pred_test = model.predict(X_test)
         pred_test = np.argmax(pred_test, axis=-1)
 
         f1 = f1_score(Y_test, pred_test, average="macro")
 
-        print("Data size :", X_used.shape[0])
-
-        print("Test f1 score : %s "% f1)
-
         acc = accuracy_score(Y_test, pred_test)
 
-        print("Test accuracy score : %s "% acc)
-
         results.append({"size": X_used.shape[0], "accuracy": acc, "f1":f1})
+
+        print(results[-1])
 
         step = np.random.choice(unused_samples, size=step_size).tolist()
         used_samples += step
         unused_samples = list(set(unused_samples) - set(step))
 
-        with open('../output/random_performance.json', 'w') as f:
+        with open('../output/random_performance_%s.json'%float(rnd), 'w') as f:
             json.dump(results, f, indent=4)

@@ -1,112 +1,99 @@
 import json
-from random import sample
 
 import numpy as np
-from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
-from tensorflow.keras.layers import Input, Dense, GlobalMaxPool2D, BatchNormalization
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
-
-from image_utils import read_img, resize_img
-
-img_size = 128
+import pandas as pd
+from sklearn.metrics import f1_score, accuracy_score
+from tensorflow.keras import optimizers, losses, activations, models
+from tensorflow.keras.layers import Dense, Input, Dropout, Convolution1D, MaxPool1D, GlobalMaxPool1D
 
 
-def baseline_model():
-    input_1 = Input(shape=(None, None, 3))
+def entropy(l):
+    return -sum([x * np.log(np.clip(x, 1e-12, 1 - 1e-12)) for x in l])
 
-    base_model = ResNet50(weights="imagenet", include_top=False)
 
-    x1 = base_model(input_1)
+def get_model():
+    nclass = 5
+    inp = Input(shape=(187, 1))
+    img_1 = Convolution1D(16, kernel_size=5, activation=activations.relu, padding="valid")(inp)
+    img_1 = Convolution1D(16, kernel_size=5, activation=activations.relu, padding="valid")(img_1)
+    img_1 = MaxPool1D(pool_size=2)(img_1)
+    img_1 = Dropout(rate=0.1)(img_1)
+    img_1 = Convolution1D(32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
+    img_1 = Convolution1D(32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
+    img_1 = MaxPool1D(pool_size=2)(img_1)
+    img_1 = Dropout(rate=0.1)(img_1)
+    img_1 = Convolution1D(32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
+    img_1 = Convolution1D(32, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
+    img_1 = MaxPool1D(pool_size=2)(img_1)
+    img_1 = Dropout(rate=0.1)(img_1)
+    img_1 = Convolution1D(256, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
+    img_1 = Convolution1D(256, kernel_size=3, activation=activations.relu, padding="valid")(img_1)
+    img_1 = GlobalMaxPool1D()(img_1)
+    img_1 = Dropout(rate=0.2)(img_1)
 
-    x1 = GlobalMaxPool2D()(x1)
+    dense_1 = Dense(64, activation=activations.relu, name="dense_1")(img_1)
+    dense_1 = Dense(64, activation=activations.relu, name="dense_2")(dense_1)
+    dense_1 = Dense(nclass, activation=activations.softmax, name="dense_3_mitbih")(dense_1)
 
-    D = Dense(50, activation='selu', name="embed")
-    BN = BatchNormalization(name="bn")
+    model = models.Model(inputs=inp, outputs=dense_1)
+    opt = optimizers.Adam(0.001)
 
-    x1 = D(x1)
-    x1 = BN(x1)
-
-    x = Dense(1, activation="sigmoid")(x1)
-
-    model = Model(input_1, x)
-
-    model.compile(loss="binary_crossentropy", metrics=["accuracy"], optimizer=Adam(0.00001))
-
-    model.summary()
-
+    model.compile(optimizer=opt, loss=losses.sparse_categorical_crossentropy, metrics=['acc'])
+    #model.summary()
     return model
 
 
-def gen(list_paths, batch_size=16):
-    while True:
-        batch_paths = sample(list_paths, batch_size)
-        batch_images = [read_img(x) for x in batch_paths]
+if __name__ == "__main__":
 
-        labels = [1 if "cat" in x.split("/")[-1] else 0 for x in batch_paths]
+    df_train = pd.read_csv("../input/mitbih_train.csv", header=None)
+    df_test = pd.read_csv("../input/mitbih_test.csv", header=None)
 
-        X1 = [resize_img(x, h=2 * img_size, w=2 * img_size) for x in batch_images]
+    Y = np.array(df_train[187].values).astype(np.int8)
+    X = np.array(df_train[list(range(187))].values)[..., np.newaxis]
 
-        X1 = np.array(X1)
+    Y_test = np.array(df_test[187].values).astype(np.int8)
+    X_test = np.array(df_test[list(range(187))].values)[..., np.newaxis]
 
-        labels = np.array(labels)
+    print(X.shape)
 
-        yield X1, labels
+    step_sizes = [2 ** i for i in range(7, 16)]
 
+    unused_samples = list(range(X.shape[0]))
+    step = np.random.choice(unused_samples, size=128).tolist()
+    used_samples = step
+    unused_samples = list(set(unused_samples) - set(step))
 
-if __name__ == '__main__':
+    results = []
 
-    model_name = "active_learning_baseline.h5"
-    pre_trained_name = "embedding_model.h5"
+    for i, step_size in enumerate(step_sizes):
+        X_used = X[used_samples, ...]
+        Y_used = Y[used_samples, ...]
 
-    batch_size = 16
+        X_unused = X[unused_samples, ...]
+        Y_unused = Y[unused_samples, ...]
 
-    print("Model : %s" % model_name)
+        model = get_model()
 
-    with open('../output/learning_steps.json', 'r') as f:
-        data = json.load(f)
-        train, test, val = data['train'], data['test'], data['val']
+        model.fit(X_used, Y_used, epochs=15, verbose=1, batch_size=64)
 
-        active_learning_steps = data['active_learning_steps']
+        pred_ununsed = model.predict(X_unused).tolist()
+        entr = [entropy(l) for l in pred_ununsed]
+        threshold = sorted(entr, reverse=True)[step_size]
 
-    used_train = []
+        pred_test = model.predict(X_test)
+        pred_test = np.argmax(pred_test, axis=-1)
 
-    perf_curve = []
+        f1 = f1_score(Y_test, pred_test, average="macro")
 
-    model = baseline_model()
+        acc = accuracy_score(Y_test, pred_test)
 
-    try:
-        model.load_weights(pre_trained_name, by_name=True)
-    except:
-        pass
+        results.append({"size": X_used.shape[0], "accuracy": acc, "f1": f1})
 
-    for step in active_learning_steps:
+        print(results[-1])
 
-        used_train = step
-
-        check = ModelCheckpoint(filepath=model_name, monitor="val_accuracy", save_best_only=True, verbose=1,
-                                save_weights_only=True)
-        reduce = ReduceLROnPlateau(monitor="val_accuracy", patience=4, verbose=1, min_lr=1e-7)
-
-        early = EarlyStopping(patience=7)
-
-        history = model.fit_generator(gen(used_train, batch_size=batch_size), epochs=14, verbose=1,
-                                      steps_per_epoch=len(used_train) // batch_size,
-                                      #validation_data=gen(val, batch_size=batch_size), callbacks=[check, reduce],
-                                      validation_steps=len(val) // batch_size,
-                                      use_multiprocessing=True, workers=8)
-        model.save_weights(model_name)
-
-        perf = model.evaluate_generator(gen(test, batch_size=batch_size), steps=2*len(test) // batch_size,
-                                        use_multiprocessing=True, workers=8)
-
-        d = {"accuracy": float(perf[1]), "size": len(used_train)}
-
-        perf_curve.append(d)
+        step = [x for x, v in zip(unused_samples, entr) if v >= threshold]
+        used_samples += step
+        unused_samples = list(set(unused_samples) - set(step))
 
         with open('../output/active_learning_performance.json', 'w') as f:
-
-            json.dump(perf_curve, f, indent=4)
-
-
+            json.dump(results, f, indent=4)

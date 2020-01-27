@@ -1,5 +1,5 @@
 import json
-
+import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score, accuracy_score
@@ -96,6 +96,7 @@ if __name__ == "__main__":
         step = [x for x, v in zip(unused_samples, entr) if v >= threshold]
         used_samples += step
         unused_samples = list(set(unused_samples) - set(step))
+        os.makedirs('../output/ecg/', exist_ok=True)
 
-        with open('../output/active_learning_performance_%s.json'%float(rnd), 'w') as f:
+        with open('../output/ecg/active_learning_performance_%s.json'%float(rnd), 'w') as f:
             json.dump(results, f, indent=4)

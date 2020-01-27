@@ -12,7 +12,7 @@ if __name__ == '__main__':
     accuracies = 0
     size = 0
     cnt = 0
-    for p in glob("../output/active_learning_performance*.json"):
+    for p in glob("../output/ecg/active_learning_performance*.json"):
         with open(p, 'r') as f:
             data = json.load(f)
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     accuracies_random = 0
     size_random = 0
     cnt_random = 0
-    for p in glob("../output/random_performance*.json"):
+    for p in glob("../output/ecg/random_performance*.json"):
         with open(p, 'r') as f:
             data = json.load(f)
 

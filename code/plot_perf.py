@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 if __name__ == '__main__':
 
-    folder = "cifar"
+    folder = "mnist"
     len_ = 10
 
     accuracies = 0

@@ -5,8 +5,7 @@ import pandas as pd
 from sklearn.metrics import f1_score, accuracy_score
 from tensorflow.keras import optimizers, losses, activations, models
 from tensorflow.keras.layers import Dense, Input, Dropout, Convolution2D, MaxPool2D, GlobalMaxPool2D
-from keras.datasets import cifar10
-from tensorflow.keras.backend import clear_session
+from keras.datasets import mnist
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
@@ -23,7 +22,7 @@ def PermaDropout(rate):
 
 def get_model():
     nclass = 10
-    inp = Input(shape=(None, None, 3))
+    inp = Input(shape=(None, None, 1))
     img_1 = Convolution2D(64, kernel_size=3, activation=activations.relu, padding="same")(inp)
     img_1 = Convolution2D(64, kernel_size=3, activation=activations.relu, padding="same")(img_1)
     img_1 = MaxPool2D(pool_size=2)(img_1)
@@ -53,16 +52,20 @@ def get_model():
 
 if __name__ == "__main__":
 
-    (X, Y), (X_test, Y_test) = cifar10.load_data()
+    (X, Y), (X_test, Y_test) = mnist.load_data()
+
+    X = X[..., np.newaxis]
+    X_test = X_test[..., np.newaxis]
+
     X = X.astype(np.float)
     X_test = X_test.astype(np.float)
 
     print(X.shape)
 
-    step_sizes = [512]*10
+    step_sizes = [128]*10
 
     unused_samples = list(range(X.shape[0]))
-    step = np.random.choice(unused_samples, size=1024).tolist()
+    step = np.random.choice(unused_samples, size=256).tolist()
     used_samples = step
     unused_samples = list(set(unused_samples) - set(step))
     val = np.random.choice(unused_samples, size=256).tolist()
@@ -97,15 +100,6 @@ if __name__ == "__main__":
 
         model.load_weights(model_name)
 
-        pred_ununsed = 0
-        for i in range(5):
-            pred_ununsed += model.predict(X_unused)/5
-
-        pred_ununsed = pred_ununsed.tolist()
-
-        entr = [entropy(l) for l in pred_ununsed]
-        threshold = sorted(entr, reverse=True)[step_size]
-
         pred_test = model.predict(X_test, batch_size=1024)
         pred_test = np.argmax(pred_test, axis=-1)
 
@@ -113,17 +107,18 @@ if __name__ == "__main__":
 
         acc = accuracy_score(Y_test, pred_test)
 
-        results.append({"size": X_used.shape[0], "accuracy": acc, "f1": f1})
+        results.append({"size": X_used.shape[0], "accuracy": acc, "f1":f1})
 
         print(results[-1])
 
-        step = [x for x, v in zip(unused_samples, entr) if v >= threshold]
+        step = np.random.choice(unused_samples, size=step_size).tolist()
         used_samples += step
         unused_samples = list(set(unused_samples) - set(step))
-        os.makedirs('../output/cifar/', exist_ok=True)
+        os.makedirs('../output/mnist/', exist_ok=True)
 
-        with open('../output/cifar/active_learning_performance_%s.json'%float(rnd), 'w') as f:
+        with open('../output/mnist/random_performance_%s.json'%float(rnd), 'w') as f:
             json.dump(results, f, indent=4)
 
         del model
         clear_session()
+

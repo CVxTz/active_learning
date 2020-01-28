@@ -7,8 +7,8 @@ from matplotlib import pyplot as plt
 
 if __name__ == '__main__':
 
-    folder = "mnist"
-    len_ = 10
+    folder = "ecg"
+    len_ = 20
 
     accuracies = 0
     size = 0
@@ -45,6 +45,7 @@ if __name__ == '__main__':
     plt.plot(size_random, accuracies_random, label="Random")
     plt.legend()
     plt.xlabel("Training Size")
-    plt.ylabel("Accuracy")
+    plt.ylabel("F1 score (macro)")
+    plt.title(folder.upper())
 
-    plt.show()
+    plt.savefig(folder+".png")

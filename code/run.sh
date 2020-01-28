@@ -1,5 +1,5 @@
-for i in {0..20}
+for i in {0..10}
 do
-python active_learning_ecg.py
-python random_ecg.py
+python active_learning_cifar.py
+python random_cifar.py
 done

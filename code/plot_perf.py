@@ -1,14 +1,13 @@
 import json
 from glob import glob
-from random import sample, shuffle
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 if __name__ == '__main__':
 
-    folder = "ecg"
-    len_ = 20
+    folder = "mnist"
+    len_ = 20 if folder == "ecg" else 10
 
     accuracies = 0
     size = 0
@@ -22,8 +21,8 @@ if __name__ == '__main__':
             size += np.array([x['size'] for x in data])
             cnt += 1
 
-    accuracies = accuracies/cnt
-    size = size/cnt
+    accuracies = accuracies / cnt
+    size = size / cnt
 
     accuracies_random = 0
     size_random = 0
@@ -37,8 +36,8 @@ if __name__ == '__main__':
             size_random += np.array([x['size'] for x in data])
             cnt_random += 1
 
-    accuracies_random = accuracies_random/cnt_random
-    size_random = size_random/cnt_random
+    accuracies_random = accuracies_random / cnt_random
+    size_random = size_random / cnt_random
 
     plt.figure()
     plt.plot(size, accuracies, label="Active Learning")
@@ -48,4 +47,8 @@ if __name__ == '__main__':
     plt.ylabel("F1 score (macro)")
     plt.title(folder.upper())
 
-    plt.savefig(folder+".png")
+    plt.savefig(folder + ".png")
+
+    print(list(zip(size.tolist(), accuracies.tolist())))
+
+    print(list(zip(size_random.tolist(), accuracies_random.tolist())))

@@ -57,8 +57,8 @@ samples that are suggested by the algorithm as valuable.
 
 2 — Train classification model on the initial batch.
 
-3 — For n steps do :<br> - Select next batch of the most promising examples of
-size batch_size using uncertainty in the form of **entropy**. Where you would
+3 — For n steps do :<br> - Select the next batch of the most promising examples of
+size batch_size using uncertainty in the form of **entropy**, where you would
 rank sample by their prediction entropy and only pick the top batch_size sample
 with the highest entropy.<br> - Train the model on all data selected so far.<br>
 - Evaluate the model on the test set.

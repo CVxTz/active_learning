@@ -1,5 +1,7 @@
 # Active Learning For An Efficient Data Annotation Strategy
 
+Code for : <https://towardsdatascience.com/active-learning-for-an-efficient-data-annotation-strategy-4d007c5d7ed1>
+
 #### Environment :
 
 python3.6
